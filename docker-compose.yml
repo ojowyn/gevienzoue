@@ -1,0 +1,48 @@
+version: "3.7"
+services:
+  www:
+    build:
+      context: ./apache
+    restart: always
+    volumes:
+      - ./www:/var/www/html
+      - ./vhost:/usr/local/apache2/conf/extra/virtualhost:ro
+    labels:
+      - traefik.docker.network=reverse-proxy
+      - traefik.enable=true
+      - traefik.http.routers.gevienzoue_www.rule=Host(`gevienzoue.open.local`)
+      - traefik.http.routers.gevienzoue_www.tls=true
+      - traefik.http.services.gevienzoue_www.loadbalancer.server.port=80
+    networks:
+      - frontend
+      - backend
+  php:
+    build:
+      context: ./php
+    restart: always
+    volumes:
+      - ./www:/var/www/html
+      - ./php/conf/999-config.ini:/usr/local/etc/php/conf.d/999-config.ini:ro
+    networks:
+      - frontend
+      - backend
+  mysql:
+    build:
+      context: ./mysql
+    restart: always
+    volumes:
+      - mysqldata:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - 3306:3306
+    networks:
+      - backend
+volumes:
+  mysqldata:
+  phpmyadmindata:
+
+networks:
+  backend: {}
+  frontend:
+    name: reverse-proxy
